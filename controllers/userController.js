@@ -41,6 +41,31 @@ class UserController {
       });
     } catch (error) {
       console.error('Registration error:', error);
+      
+      // Handle validation errors
+      if (error.name === 'ValidationError') {
+        const validationErrors = {};
+        Object.keys(error.errors).forEach(field => {
+          validationErrors[field] = error.errors[field].message;
+        });
+        
+        return res.status(400).json({
+          success: false,
+          message: 'Validation failed',
+          errors: validationErrors
+        });
+      }
+      
+      // Handle duplicate key errors
+      if (error.code === 11000) {
+        const field = Object.keys(error.keyValue)[0];
+        return res.status(400).json({
+          success: false,
+          message: `${field} already exists`,
+          error: `${field} must be unique`
+        });
+      }
+      
       res.status(500).json({
         success: false,
         message: 'Registration failed',
@@ -161,6 +186,31 @@ class UserController {
       });
     } catch (error) {
       console.error('Update profile error:', error);
+      
+      // Handle validation errors
+      if (error.name === 'ValidationError') {
+        const validationErrors = {};
+        Object.keys(error.errors).forEach(field => {
+          validationErrors[field] = error.errors[field].message;
+        });
+        
+        return res.status(400).json({
+          success: false,
+          message: 'Validation failed',
+          errors: validationErrors
+        });
+      }
+      
+      // Handle duplicate key errors
+      if (error.code === 11000) {
+        const field = Object.keys(error.keyValue)[0];
+        return res.status(400).json({
+          success: false,
+          message: `${field} already exists`,
+          error: `${field} must be unique`
+        });
+      }
+      
       res.status(500).json({
         success: false,
         message: 'Failed to update profile',
@@ -187,6 +237,30 @@ class UserController {
       res.status(500).json({
         success: false,
         message: 'Failed to get users',
+        error: error.message
+      });
+    }
+  }
+
+  // Get matching users based on interests, skills, and project ideas
+  async getMatches(req, res) {
+    try {
+      const currentUser = req.user;
+      const matches = await userService.findMatches(currentUser);
+      
+      res.status(200).json({
+        success: true,
+        message: 'Matches retrieved successfully',
+        data: {
+          matches,
+          count: matches.length
+        }
+      });
+    } catch (error) {
+      console.error('Get matches error:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to get matches',
         error: error.message
       });
     }

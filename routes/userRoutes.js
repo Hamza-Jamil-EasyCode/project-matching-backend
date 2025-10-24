@@ -13,7 +13,7 @@ router.post('/login', celebrate(loginValidation), userController.login);
 // Protected routes
 router.get('/profile', authenticateToken, userController.getProfile);
 router.put('/profile', authenticateToken, celebrate(updateUserValidation), userController.updateProfile);
-router.get('/matches', authenticateToken, userController.getMatches);
+router.get('/get-matches', authenticateToken, userController.getMatches);
 
 // Admin routes
 router.get('/users', authenticateToken, requireAdmin, userController.getAllUsers);

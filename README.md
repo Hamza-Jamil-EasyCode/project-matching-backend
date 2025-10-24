@@ -24,6 +24,7 @@ A complete Node.js backend server with MongoDB, JWT authentication, and user man
 #### Protected Routes (Require JWT Token)
 - `GET /api/auth/profile` - Get current user profile
 - `PUT /api/auth/profile` - Update user profile
+- `GET /api/auth/matches` - Get matching users based on interests, skills, and project ideas
 
 #### Admin Routes (Require Admin Role)
 - `GET /api/auth/users` - Get all users (admin only)
@@ -113,6 +114,12 @@ curl -X PUT http://localhost:4000/api/auth/profile \
     "projectIdea": "Updated project idea for a mobile app with AI features.",
     "availabilityDate": "2024-03-01T00:00:00.000Z"
   }'
+```
+
+### Get Matches (Protected)
+```bash
+curl -X GET http://localhost:4000/api/auth/matches \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN"
 ```
 
 ## Project Structure

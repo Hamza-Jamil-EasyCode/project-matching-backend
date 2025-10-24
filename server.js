@@ -3,6 +3,7 @@ const mongoose = require('mongoose');
 const cors = require('cors');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
+const { errors } = require('celebrate');
 require('dotenv').config();
 
 const app = express();
@@ -27,7 +28,7 @@ app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 
 // MongoDB connection
-mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/user-auth-app', {
+mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/uzh-student-matching', {
   useNewUrlParser: true,
   useUnifiedTopology: true,
 })
@@ -40,7 +41,7 @@ mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/user-auth
 });
 
 // Routes
-app.use('/api/auth', require('./routes/authRoutes'));
+app.use('/api/user', require('./routes/userRoutes'));
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {
@@ -59,9 +60,43 @@ app.use('*', (req, res) => {
   });
 });
 
+// Celebrate error handler
+app.use(errors());
+
 // Global error handler
 app.use((err, req, res, next) => {
-  console.error(err.stack);
+  console.error('Error details:', err);
+  console.error('Error stack:', err.stack);
+  
+  // Handle validation errors from Celebrate
+  if (err.isJoi || err.name === 'ValidationError' || err.message === 'Validation failed') {
+    const validationErrors = {};
+    
+    if (err.details) {
+      err.details.forEach(detail => {
+        const field = detail.path.join('.');
+        validationErrors[field] = detail.message;
+      });
+    }
+    
+    return res.status(400).json({
+      success: false,
+      message: 'Validation failed',
+      errors: validationErrors
+    });
+  }
+  
+  // Handle MongoDB duplicate key errors
+  if (err.code === 11000) {
+    const field = Object.keys(err.keyValue)[0];
+    return res.status(400).json({
+      success: false,
+      message: `${field} already exists`,
+      error: `${field} must be unique`
+    });
+  }
+  
+  // Handle other errors
   res.status(500).json({
     success: false,
     message: 'Something went wrong!',
