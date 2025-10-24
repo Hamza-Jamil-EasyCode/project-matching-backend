@@ -197,6 +197,148 @@ class UserService {
       throw new Error(`Failed to find matches: ${error.message}`);
     }
   }
+
+  // Send connection request to another user
+  async sendConnectionRequest(currentUserId, targetUserId) {
+    try {
+      // Check if target user exists
+      const targetUser = await User.findById(targetUserId);
+      if (!targetUser) {
+        throw new Error('Target user not found');
+      }
+
+      // Check if target user is active
+      if (!targetUser.isActive) {
+        throw new Error('Target user is not active');
+      }
+
+      // Check if users are the same
+      if (currentUserId.toString() === targetUserId.toString()) {
+        throw new Error('Cannot send connection request to yourself');
+      }
+
+      // Check if already connected
+      const currentUser = await User.findById(currentUserId);
+      if (currentUser.connections.includes(targetUserId)) {
+        throw new Error('Already connected with this user');
+      }
+
+      // Check if already in pending connections
+      if (targetUser.pendingConnections.includes(currentUserId)) {
+        throw new Error('Connection request already sent');
+      }
+
+      // Check if current user is in target user's pending connections (reverse request)
+      if (currentUser.pendingConnections.includes(targetUserId)) {
+        throw new Error('This user has already sent you a connection request');
+      }
+
+      // Add current user to target user's pending connections
+      await User.findByIdAndUpdate(
+        targetUserId,
+        { $addToSet: { pendingConnections: currentUserId } },
+        { new: true }
+      );
+
+      return {
+        success: true,
+        message: 'Connection request sent successfully'
+      };
+    } catch (error) {
+      throw new Error(`Failed to send connection request: ${error.message}`);
+    }
+  }
+
+  // Respond to connection request (accept or reject)
+  async respondToConnectionRequest(currentUserId, connectionId, status) {
+    try {
+      // Check if connectionId is valid
+      const connectionUser = await User.findById(connectionId);
+      if (!connectionUser) {
+        throw new Error('Connection user not found');
+      }
+
+      // Get current user
+      const currentUser = await User.findById(currentUserId);
+      if (!currentUser) {
+        throw new Error('Current user not found');
+      }
+
+      // Check if the connectionId is in current user's pendingConnections
+      if (!currentUser.pendingConnections.includes(connectionId)) {
+        throw new Error('No pending connection request found from this user');
+      }
+
+      if (status === 'accept') {
+        // Remove from pendingConnections and add to connections for both users
+        await User.findByIdAndUpdate(
+          currentUserId,
+          { 
+            $pull: { pendingConnections: connectionId },
+            $addToSet: { connections: connectionId }
+          }
+        );
+
+        await User.findByIdAndUpdate(
+          connectionId,
+          { $addToSet: { connections: currentUserId } }
+        );
+
+        return {
+          success: true,
+          message: 'Connection request accepted successfully'
+        };
+      } else if (status === 'reject') {
+        // Remove from pendingConnections only
+        await User.findByIdAndUpdate(
+          currentUserId,
+          { $pull: { pendingConnections: connectionId } }
+        );
+
+        return {
+          success: true,
+          message: 'Connection request rejected successfully'
+        };
+      } else {
+        throw new Error('Invalid status. Must be "accept" or "reject"');
+      }
+    } catch (error) {
+      throw new Error(`Failed to respond to connection request: ${error.message}`);
+    }
+  }
+
+  // Delete user by ID (admin only)
+  async deleteUser(userId) {
+    try {
+      // Check if user exists
+      const user = await User.findById(userId);
+      if (!user) {
+        throw new Error('User not found');
+      }
+
+      // Check if user is already deleted/inactive
+      if (!user.isActive) {
+        throw new Error('User is already inactive');
+      }
+
+      // Soft delete: Set isActive to false instead of hard delete
+      await User.findByIdAndUpdate(
+        userId,
+        { 
+          isActive: false,
+          lastLogin: new Date()
+        },
+        { new: true }
+      );
+
+      return {
+        success: true,
+        message: 'User deleted successfully'
+      };
+    } catch (error) {
+      throw new Error(`Failed to delete user: ${error.message}`);
+    }
+  }
 }
 
 module.exports = new UserService();

@@ -129,8 +129,57 @@ const updateUserValidation = {
   })
 };
 
+// Send connection request validation
+const sendConnectionRequestValidation = {
+  body: Joi.object({
+    targetUserId: Joi.string()
+      .pattern(/^[0-9a-fA-F]{24}$/)
+      .required()
+      .messages({
+        'string.pattern.base': 'Target user ID must be a valid ObjectId',
+        'any.required': 'Target user ID is required'
+      })
+  })
+};
+
+// Respond to connection request validation
+const respondToConnectionRequestValidation = {
+  body: Joi.object({
+    status: Joi.string()
+      .valid('accept', 'reject')
+      .required()
+      .messages({
+        'any.only': 'Status must be either "accept" or "reject"',
+        'any.required': 'Status is required'
+      }),
+    connectionId: Joi.string()
+      .pattern(/^[0-9a-fA-F]{24}$/)
+      .required()
+      .messages({
+        'string.pattern.base': 'Connection ID must be a valid ObjectId',
+        'any.required': 'Connection ID is required'
+      })
+  })
+};
+
+// Delete user validation
+const deleteUserValidation = {
+  params: Joi.object({
+    userId: Joi.string()
+      .pattern(/^[0-9a-fA-F]{24}$/)
+      .required()
+      .messages({
+        'string.pattern.base': 'User ID must be a valid ObjectId',
+        'any.required': 'User ID is required'
+      })
+  })
+};
+
 module.exports = {
   registerValidation,
   loginValidation,
-  updateUserValidation
+  updateUserValidation,
+  sendConnectionRequestValidation,
+  respondToConnectionRequestValidation,
+  deleteUserValidation
 };

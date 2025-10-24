@@ -265,6 +265,71 @@ class UserController {
       });
     }
   }
+
+  // Send connection request to another user
+  async sendConnectionRequest(req, res) {
+    try {
+      const currentUserId = req.user._id;
+      const { targetUserId } = req.body;
+
+      const result = await userService.sendConnectionRequest(currentUserId, targetUserId);
+      
+      res.status(200).json({
+        success: true,
+        message: result.message
+      });
+    } catch (error) {
+      console.error('Send connection request error:', error);
+      res.status(400).json({
+        success: false,
+        message: 'Failed to send connection request',
+        error: error.message
+      });
+    }
+  }
+
+  // Respond to connection request (accept or reject)
+  async respondToConnectionRequest(req, res) {
+    try {
+      const currentUserId = req.user._id;
+      const { status, connectionId } = req.body;
+
+      const result = await userService.respondToConnectionRequest(currentUserId, connectionId, status);
+      
+      res.status(200).json({
+        success: true,
+        message: result.message
+      });
+    } catch (error) {
+      console.error('Respond to connection request error:', error);
+      res.status(400).json({
+        success: false,
+        message: 'Failed to respond to connection request',
+        error: error.message
+      });
+    }
+  }
+
+  // Delete user by ID (admin only)
+  async deleteUser(req, res) {
+    try {
+      const { userId } = req.params;
+
+      const result = await userService.deleteUser(userId);
+      
+      res.status(200).json({
+        success: true,
+        message: result.message
+      });
+    } catch (error) {
+      console.error('Delete user error:', error);
+      res.status(400).json({
+        success: false,
+        message: 'Failed to delete user',
+        error: error.message
+      });
+    }
+  }
 }
 
 module.exports = new UserController();
