@@ -108,10 +108,28 @@ class UserService {
   // Find matching users based on interests, skills, and project ideas
   async findMatches(currentUser) {
     try {
+      // Find all users to whom the current user has sent connection requests
+      // These users have currentUser._id in their pendingConnections array
+      const usersWithSentRequests = await User.find({
+        pendingConnections: currentUser._id,
+        isActive: true,
+      }).select("_id");
+
+      const sentRequestUserIds = usersWithSentRequests.map((user) => user._id);
+
+      // Extract IDs from connections and pendingConnections (handle both ObjectId and populated objects)
+      const connectionIds = currentUser.connections.map(
+        (conn) => conn._id || conn
+      );
+      const pendingConnectionIds = currentUser.pendingConnections.map(
+        (pending) => pending._id || pending
+      );
+
       const excludedUserIds = [
         currentUser._id,
-        ...currentUser.connections,
-        ...currentUser.pendingConnections,
+        ...connectionIds,
+        ...pendingConnectionIds,
+        ...sentRequestUserIds,
       ];
 
       // Get all users except the current user
