@@ -1,5 +1,6 @@
 const userService = require('../services/userService');
 const { generateUserToken } = require('../utils/jwt');
+const bcrypt = require('bcryptjs');
 
 class UserController {
   // Register a new user
@@ -152,8 +153,10 @@ class UserController {
   // Update user profile
   async updateProfile(req, res) {
     try {
-      const { name, email, programOfStudy, interest, skills, projectIdea, availabilityDate } = req.body;
+      const { name, email, programOfStudy, interest, skills, projectIdea, availabilityDate, password } = req.body;
       const userId = req.user._id;
+      const salt = await bcrypt.genSalt(12);
+      const encryptedPassword = await bcrypt.hash(password, salt);
 
       // Check if email is being changed and if it already exists
       if (email && email !== req.user.email) {
@@ -174,7 +177,8 @@ class UserController {
         interest,
         skills,
         projectIdea,
-        availabilityDate
+        availabilityDate,
+        password: encryptedPassword
       });
 
       res.status(200).json({
